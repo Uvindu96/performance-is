@@ -54,18 +54,18 @@
 # Finally, execute test scenarios using the function test_scenarios
 
 # Concurrent users (these will by multiplied by the number of JMeter servers)
-default_concurrent_users="50 100 150 300 500"
+default_concurrent_users="300 500 1000 1500 2000"
 # Application heap Sizes
-default_heap_sizes="2G"
+default_heap_sizes="4G"
 
 # Test Duration in minutes
 default_test_duration=15
 test_duration=$default_test_duration
 # Warm-up time in minutes
-default_warm_up_time=5
+default_warm_up_time=0
 warm_up_time=$default_warm_up_time
 # Heap size of JMeter Client
-default_jmeter_client_heap_size=2G
+default_jmeter_client_heap_size=4G
 jmeter_client_heap_size=$default_jmeter_client_heap_size
 
 # Scenario names to include
@@ -83,8 +83,8 @@ default_is_port=9443
 is_port=$default_is_port
 
 noOfTenants=100
-spCount=10
-userCount=1000
+spCount=1000
+userCount=100
 mode=""
 deployment=""
 
@@ -99,7 +99,7 @@ function get_ssh_hostname() {
     ssh -G "$1" | awk '/^hostname / { print $2 }'
 }
 
-lb_host=$(get_ssh_hostname "$lb_ssh_host_alias")
+lb_host=$(get_ssh_hostname "login.picdemo.cloud")
 
 function usage() {
     echo ""
@@ -355,9 +355,11 @@ function run_test_data_scripts() {
 
     echo "Running test data setup scripts"
     echo "=========================================================================================="
-    declare -a scripts=("TestData_SCIM2_Add_User.jmx" "TestData_Add_OAuth_Apps.jmx" "TestData_Add_SAML_Apps.jmx" "TestData_Add_images.jmx" "TestData_Add_Device_Flow_OAuth_Apps.jmx")
+    declare -a scripts=("TestData_Add_OAuth_Apps.jmx" "TestData_Add_Super_Tenant_Users.jmx");
 #    declare -a scripts=("TestData_Add_Super_Tenant_Users.jmx" "TestData_Add_OAuth_Apps.jmx" "TestData_Add_SAML_Apps.jmx" "TestData_Add_Tenants.jmx" "TestData_Add_Tenant_Users.jmx")
     setup_dir="/home/ubuntu/workspace/jmeter/setup"
+    is_port=443
+    lb_host="login.picdemo.cloud"
 
     for script in "${scripts[@]}"; do
         script_file="$setup_dir/$script"
@@ -476,7 +478,7 @@ function initiailize_test() {
         cp "$0" results
         mv test-metadata.json results/
 
-        run_test_data_scripts
+        #run_test_data_scripts
         #run_tenant_test_data_scripts
     fi
 }
@@ -523,7 +525,7 @@ function test_scenarios() {
                 mkdir -p "$report_location"
 
                 time=$(expr "$test_duration" \* 60)
-                declare -ag jmeter_params=("concurrency=$users" "time=$time" "host=$lb_host" "-Jport=$is_port" "deployment=$deployment")
+                declare -ag jmeter_params=("concurrency=$users" "time=$time" "host=login.picdemo.cloud" -Jport=443 "deployment=$deployment")
 
                 local tenantMode=${scenario[tenantMode]}
                 if [ "$tenantMode" = true ]; then
